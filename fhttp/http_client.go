@@ -340,6 +340,7 @@ func (h *HTTPOptions) AddAndValidateExtraHeader(hdr string) error {
 	default:
 		log.LogVf("Setting regular extra header %s: %s", key, value)
 		h.extraHeaders.Add(key, value)
+		h.extraHeaders[key] = []string{value}
 		log.Debugf("headers now %+v", h.extraHeaders)
 	}
 	return nil
