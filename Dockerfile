@@ -4,7 +4,8 @@ FROM dockerhub.wufly.top/library/golang:1.21-alpine AS build
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
     GOOS=linux \
-    GOARCH=amd64
+    GOARCH=amd64 \
+    GOPROXY=https://goproxy.cn,direct
 
 # 将工作目录设置为 /app
 WORKDIR /app
