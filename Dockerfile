@@ -23,7 +23,7 @@ COPY . .
 RUN go build -o main .
 
 # 第二阶段：运行阶段
-FROM alpine:latest
+FROM dockerhub.wufly.top/library/alpine:latest
 
 # 创建一个非root用户以运行应用程序
 RUN adduser -D nonroot
