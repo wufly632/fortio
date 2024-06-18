@@ -21,6 +21,8 @@ COPY . .
 
 # 构建 Go 应用程序
 RUN go build -o main .
+# 调试：检查构建结果
+RUN ls -la /app
 
 # 第二阶段：运行阶段
 FROM dockerhub.wufly.top/library/alpine:latest
@@ -36,6 +38,9 @@ COPY --from=build /app/main .
 
 # 切换到非root用户
 USER nonroot
+
+# 调试：检查复制结果
+RUN ls -la /root
 
 # 定义外部可以访问的端口
 EXPOSE 8080
