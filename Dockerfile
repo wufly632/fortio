@@ -1,29 +1,44 @@
 # Build the binaries in larger image
-FROM dockerhub.wufly.top/fortio/fortio.build:v72@sha256:3c90bb3024e44aba4e343364f4e29c07b889c9a5ea32de71869703411495fb85 as build
-WORKDIR /build
-COPY --chown=build:build . fortio
-ARG MODE=install
-# We moved a lot of the logic into the Makefile so it can be reused in brew
-# but that also couples the 2, this expects to find binaries in the right place etc
-RUN make -C fortio official-build-version BUILD_DIR=/build MODE=${MODE}
+FROM dockerhub.wufly.top/library/golang:1.21-alpine AS build
+# 设置环境变量
+ENV GO111MODULE=on \
+    CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
 
-# Minimal image with just the binary and certs
-FROM scratch as release
-# NOTE: the list of files here, if updated, must be changed in release/Dockerfile.in too
-COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-# TODO: get rid of *.bak, *~ and other spurious non source files
-#COPY --from=build /build/fortio/ui/static /usr/share/fortio/static
-#COPY --from=build /build/fortio/ui/templates /usr/share/fortio/templates
-COPY --from=build /build/result/fortio /usr/bin/fortio
-EXPOSE 8078
-EXPOSE 8079
+# 将工作目录设置为 /app
+WORKDIR /app
+
+# 将 go.mod 和 go.sum 复制到工作目录
+COPY go.mod go.sum ./
+
+# 下载所有依赖。它们会保存在缓存中，以加快后续的构建速度
+RUN go mod download
+
+# 复制项目的所有源码到工作目录
+COPY . .
+
+# 构建 Go 应用程序
+RUN go build -o main .
+
+# 第二阶段：运行阶段
+FROM alpine:latest
+
+# 创建一个非root用户以运行应用程序
+RUN adduser -D nonroot
+
+# 将工作目录设置为 /root/
+WORKDIR /root/
+
+# 从构建阶段复制构建的二进制文件到运行阶段
+COPY --from=build /app/main .
+
+# 切换到非root用户
+USER nonroot
+
+# 定义外部可以访问的端口
 EXPOSE 8080
 EXPOSE 8081
-# configmap (dynamic flags)
-VOLUME /etc/fortio
-# data files etc
-VOLUME /var/lib/fortio
-WORKDIR /var/lib/fortio
-ENTRYPOINT ["/usr/bin/fortio"]
-# start the server mode (grpc ping on 8079, http echo and UI on 8080, redirector on 8081) by default
-CMD ["server", "-config-dir", "/etc/fortio"]
+
+# 启动 Go 应用程序
+CMD ["./main server"]
