@@ -31,7 +31,7 @@ FROM dockerhub.wufly.top/library/alpine:latest
 RUN adduser -D nonroot
 
 # 将工作目录设置为 /root/
-WORKDIR /root/
+WORKDIR /app/
 
 # 从构建阶段复制构建的二进制文件到运行阶段
 COPY --from=build /app/main .
@@ -40,7 +40,7 @@ COPY --from=build /app/main .
 USER nonroot
 
 # 调试：检查复制结果
-RUN ls -la /root
+RUN ls -la /app
 
 # 定义外部可以访问的端口
 EXPOSE 8080
